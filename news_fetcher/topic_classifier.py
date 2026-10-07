@@ -22,8 +22,12 @@ langfuse = Langfuse(
 # _active_topic_names below) — keeps a transient DB hiccup from crashing
 # classification of every remaining article in a batch.
 _FALLBACK_TOPIC_NAMES = [
-    "US Politics", "US News", "International News",
-    "Sci/Tech", "Sports", "Buss/Fin", "Other",
+    "Arts & Culture", "Conflict & Defense", "Crime & Justice",
+    "Disasters & Safety", "Business & Finance", "Education",
+    "Environment & Climate", "Health & Medicine", "Human Interest",
+    "Labor & Employment", "Lifestyle", "Politics",
+    "Religion & Faith", "Science & Tech", "Society & Culture",
+    "Sports", "Weather", "Other",
 ]
 _TOPIC_NAME_CACHE_TTL_SECONDS = 60
 _topic_name_cache = {"names": None, "expires_at": 0.0}

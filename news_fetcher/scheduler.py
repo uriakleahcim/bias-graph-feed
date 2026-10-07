@@ -67,6 +67,30 @@ def get_scheduled_fetches():
     ]
 
 
+def _ingestion_profile(name=None):
+    """Return the bounded policy for a full or standalone smoke run."""
+    profile = (name or os.environ.get("MUCKSCRAPER_INGESTION_PROFILE", "full")).strip().lower()
+    if profile in ("", "full"):
+        return {
+            "name": "full",
+            "topic_limit": None,
+            "newsapi_page_size": 100,
+            "gnews_max_results": 20,
+            "include_rss": True,
+            "include_targeted_enrichment": True,
+        }
+    if profile == "smoke":
+        return {
+            "name": "smoke",
+            "topic_limit": 1,
+            "newsapi_page_size": 10,
+            "gnews_max_results": 5,
+            "include_rss": False,
+            "include_targeted_enrichment": False,
+        }
+    raise ValueError(f"Unsupported MUCKSCRAPER_INGESTION_PROFILE: {profile}")
+
+
 app = create_app()
 SCRAPE_OUTCOME_HISTORY_KEY = "scrape_outcome_history_v1"
 SCRAPE_OUTCOME_HISTORY_MAX_RUNS = 40
@@ -825,8 +849,15 @@ def _notify_fetch_report(report_payload):
         logging.warning(f"  [n8n] Fetch report webhook failed ({e}) — continuing normally")
 
 
-def run_all_fetches(run_full_pipeline=True):
+def run_all_fetches(run_full_pipeline=True, ingestion_profile=None):
+    profile = _ingestion_profile(ingestion_profile)
     logging.info("=== Starting scheduled fetch run ===")
+    logging.info(
+        "Ingestion profile: %s (topics=%s, NewsAPI=%s, GNews=%s, RSS=%s)",
+        profile["name"], profile["topic_limit"] or "all",
+        profile["newsapi_page_size"], profile["gnews_max_results"],
+        profile["include_rss"],
+    )
     with app.app_context():
         ollama_state = {
             "up_at_start": False,
@@ -838,6 +869,7 @@ def run_all_fetches(run_full_pipeline=True):
         run_metrics = {
             "status": "ok",
             "started_at": datetime.utcnow().isoformat(),
+            "ingestion_profile": profile["name"],
             "topics": {},
             "rss": None,
             "totals": {
@@ -856,11 +888,14 @@ def run_all_fetches(run_full_pipeline=True):
             "status": "running",
             "started_at": run_metrics["started_at"],
             "run_full_pipeline": run_full_pipeline,
+            "ingestion_profile": profile["name"],
         })
         ollama_state["up_at_start"] = _check_ollama_status_for_report(ollama_state, "run_start")
 
         # Fetch all categories
         scheduled_fetches = get_scheduled_fetches()
+        if profile["topic_limit"] is not None:
+            scheduled_fetches = scheduled_fetches[:profile["topic_limit"]]
         if not scheduled_fetches:
             logging.warning(
                 "No active scheduled fetches configured -- skipping the NewsAPI/GNews "
@@ -876,7 +911,9 @@ def run_all_fetches(run_full_pipeline=True):
                     country=fetch["country"],
                     category=fetch["category"],
                     gnews_query=fetch["gnews_query"],
-                    gnews_category=fetch["gnews_category"]
+                    gnews_category=fetch["gnews_category"],
+                    newsapi_page_size=profile["newsapi_page_size"],
+                    gnews_max_results=profile["gnews_max_results"],
                 )
                 run_metrics["topics"][fetch["label"]] = topic_metrics
                 for provider_metrics in topic_metrics.get("providers", {}).values():
@@ -897,27 +934,31 @@ def run_all_fetches(run_full_pipeline=True):
                     "reason": str(e),
                 }
 
-        # Run RSS fetch for major wire services and networks
-        logging.info("--- Fetching RSS feeds ---")
-        try:
-            rss_metrics = fetch_and_store_rss()
-            run_metrics["rss"] = rss_metrics
-            run_metrics["totals"]["input_articles"] += rss_metrics.get("input_articles", 0)
-            run_metrics["totals"]["stored"] += rss_metrics.get("stored", 0)
-            run_metrics["totals"]["new_outlets"] += rss_metrics.get("new_outlets", 0)
-            run_metrics["totals"]["stories_touched"] += rss_metrics.get("stories_touched", 0)
-            _merge_counts(run_metrics["totals"]["skipped"], rss_metrics.get("skipped"))
-            _merge_counts(run_metrics["totals"]["scrape_statuses"], rss_metrics.get("scrape_statuses"))
-            _merge_counts(run_metrics["totals"]["bias_buckets"], rss_metrics.get("bias_buckets"))
-            _merge_counts(run_metrics["totals"]["bias_sources"], rss_metrics.get("bias_sources"))
-        except Exception as e:
-            db.session.rollback()
-            logging.error(f"Error fetching RSS feeds: {e}")
-            run_metrics["status"] = "partial_error"
-            run_metrics["rss"] = {
-                "status": "error",
-                "reason": str(e),
-            }
+        if profile["include_rss"]:
+            # Run RSS fetch for major wire services and networks.
+            logging.info("--- Fetching RSS feeds ---")
+            try:
+                rss_metrics = fetch_and_store_rss()
+                run_metrics["rss"] = rss_metrics
+                run_metrics["totals"]["input_articles"] += rss_metrics.get("input_articles", 0)
+                run_metrics["totals"]["stored"] += rss_metrics.get("stored", 0)
+                run_metrics["totals"]["new_outlets"] += rss_metrics.get("new_outlets", 0)
+                run_metrics["totals"]["stories_touched"] += rss_metrics.get("stories_touched", 0)
+                _merge_counts(run_metrics["totals"]["skipped"], rss_metrics.get("skipped"))
+                _merge_counts(run_metrics["totals"]["scrape_statuses"], rss_metrics.get("scrape_statuses"))
+                _merge_counts(run_metrics["totals"]["bias_buckets"], rss_metrics.get("bias_buckets"))
+                _merge_counts(run_metrics["totals"]["bias_sources"], rss_metrics.get("bias_sources"))
+            except Exception as e:
+                db.session.rollback()
+                logging.error(f"Error fetching RSS feeds: {e}")
+                run_metrics["status"] = "partial_error"
+                run_metrics["rss"] = {
+                    "status": "error",
+                    "reason": str(e),
+                }
+        else:
+            logging.info("--- RSS fetch skipped (smoke profile) ---")
+            run_metrics["rss"] = {"status": "skipped", "reason": "smoke_profile"}
 
         if run_full_pipeline:
             # Run Bias Checker ONCE after all fetches
@@ -976,7 +1017,16 @@ def run_all_fetches(run_full_pipeline=True):
             # Keyed on the fast provider: the load this guards against is
             # classification and bias rating, both fast-tier, so the global
             # provider is the wrong thing to ask under split routing.
-            if llm_client.provider_for_tier(llm_client.TIER_FAST) == "groq":
+            if not profile["include_targeted_enrichment"]:
+                logging.info("--- Targeted RSS enrichment skipped (smoke profile) ---")
+                for step in (
+                    "targeted_right_rss_enrichment", "targeted_right_rss_bias_retry",
+                    "targeted_right_rss_enrichment_second_pass", "targeted_right_rss_second_pass_bias_retry",
+                    "targeted_left_rss_enrichment", "targeted_left_rss_bias_retry",
+                    "targeted_left_rss_enrichment_second_pass", "targeted_left_rss_bias_retry",
+                ):
+                    run_metrics["steps"][step] = {"status": "skipped", "reason": "smoke_profile"}
+            elif llm_client.provider_for_tier(llm_client.TIER_FAST) == "groq":
                 # Targeted left/right RSS enrichment adds meaningful classification/
                 # bias-rating LLM load on top of the regular fetch; skip it on Groq's
                 # free tier. Re-enable once Ollama is back.
@@ -1104,6 +1154,7 @@ def run_all_fetches(run_full_pipeline=True):
             "status": "idle",
             "started_at": run_metrics["started_at"],
             "run_full_pipeline": run_full_pipeline,
+            "ingestion_profile": profile["name"],
             "finished_at": run_metrics.get("finished_at"),
         })
 

@@ -2,8 +2,8 @@
 # muckscraperHeadlinesGoogleNEW/install.sh
 #
 # One-command setup for a fresh clone: creates .env if missing, builds the
-# core services, bootstraps the database (pgvector extension + tables +
-# admin user via bootstrap_admin.py), then starts the scheduler.
+# core services, lets the Compose lifecycle bootstrap the database (pgvector
+# extension, tables, migrations, and defaults), then starts the scheduler.
 #
 # Safe to re-run — each step is idempotent.
 
@@ -21,7 +21,7 @@ docker compose version >/dev/null 2>&1 || die "The 'docker compose' plugin (Dock
 if [ ! -f .env ]; then
     info "No .env found — creating one from .env.sample"
     cp .env.sample .env
-    warn "Now edit .env with your API keys, Ollama host, and admin login,"
+    warn "Now edit .env with your API keys, shared Ollama host, and admin login,"
     warn "then re-run ./install.sh to continue."
     exit 0
 fi
@@ -44,10 +44,6 @@ placeholders_left=false
 for pair in \
     "NEWS_API_KEY=your_newsapi_key_here" \
     "GNEWS_API_KEY=your_gnews_key_here" \
-    "OLLAMA_HOST=http://your_ollama_ip:11434" \
-    "OLLAMA_MODEL=your_model_name_here" \
-    "EMBEDDING_MODEL=your_model_name_here" \
-    "ADMIN_PASSWORD=replace_with_a_real_admin_password" \
     "MEILI_MASTER_KEY=replace_with_a_real_meilisearch_key"
 do
     if grep -q "^${pair}" .env; then
@@ -64,19 +60,14 @@ if [ "$placeholders_left" = true ]; then
     esac
 fi
 
-info "Building and starting postgres, meilisearch, and app..."
+info "Building and starting postgres, meilisearch, and the API..."
 docker compose up -d --build postgres meilisearch app
 
-info "Setting up the database (pgvector extension + tables) and admin user..."
-info "(retries automatically while Postgres finishes starting up)"
-docker compose exec app python bootstrap_admin.py
-
-info "Starting the scheduler..."
+info "Waiting for the lifecycle database bootstrap and scheduler..."
 docker compose up -d scheduler
 
 echo
-ok "MuckScraper is running."
+ok "MuckScraper is running against its configured shared Ollama endpoint."
 echo
-echo "  Admin app:  http://localhost:5000"
-echo "  Log in with the ADMIN_USERNAME / ADMIN_PASSWORD from your .env"
+echo "  API:  http://127.0.0.1:5000/api/v1/health"
 echo

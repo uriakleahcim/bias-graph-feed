@@ -16,8 +16,9 @@ from .ingestion import store_articles
 logger = logging.getLogger(__name__)
 
 
-def fetch_newsapi(topic_name, mode="top", query=None, country="us", category=None):
+def fetch_newsapi(topic_name, mode="top", query=None, country="us", category=None, page_size=100):
     """Fetch articles from NewsAPI and store them."""
+    page_size = max(1, min(int(page_size), 100))
     api_key = os.environ.get("NEWS_API_KEY", "")
     if not api_key:
         logger.warning("NEWS_API_KEY not set, skipping NewsAPI fetch.")
@@ -39,13 +40,13 @@ def fetch_newsapi(topic_name, mode="top", query=None, country="us", category=Non
                 q=query,
                 language="en",
                 sort_by="publishedAt",
-                page_size=100,
+                page_size=page_size,
             )
         else:
             label = f"country={country}" if country else ""
             label += f" category={category}" if category else ""
             logger.info(f"[NewsAPI] Fetching top headlines ({label.strip()})")
-            kwargs = {"page_size": 100}
+            kwargs = {"page_size": page_size}
             if country:
                 kwargs["country"] = country
             if category:
@@ -101,8 +102,9 @@ def fetch_newsapi(topic_name, mode="top", query=None, country="us", category=Non
         }
 
 
-def fetch_gnews(topic_name, query=None, category=None):
+def fetch_gnews(topic_name, query=None, category=None, max_results=20):
     """Fetch articles from GNews API and store them."""
+    max_results = max(1, min(int(max_results), 100))
     api_key = os.environ.get("GNEWS_API_KEY", "")
     if not api_key:
         logger.warning("GNEWS_API_KEY not set, skipping GNews fetch.")
@@ -122,7 +124,7 @@ def fetch_gnews(topic_name, query=None, category=None):
             params = {
                 "q":      query,
                 "lang":   "en",
-                "max":    20,
+                "max":    max_results,
                 "apikey": api_key,
             }
         elif category:
@@ -132,7 +134,7 @@ def fetch_gnews(topic_name, query=None, category=None):
                 "category": category,
                 "lang":     "en",
                 "country":  "us",
-                "max":      20,
+                "max":      max_results,
                 "apikey":   api_key,
             }
         else:
@@ -141,7 +143,7 @@ def fetch_gnews(topic_name, query=None, category=None):
             params = {
                 "lang":    "en",
                 "country": "us",
-                "max":     20,
+                "max":     max_results,
                 "apikey":  api_key,
             }
 
@@ -217,13 +219,17 @@ def cleanup_old_payloads():
 
 def fetch_and_store_articles(topic_name, mode="top", query=None,
                               country="us", category=None,
-                              gnews_query=None, gnews_category=None):
+                              gnews_query=None, gnews_category=None,
+                              newsapi_page_size=100, gnews_max_results=20):
     """
     Main entry point. Fetches from both NewsAPI and GNews for a given topic.
     """
     newsapi_metrics = fetch_newsapi(topic_name, mode=mode, query=query,
-                                    country=country, category=category)
-    gnews_metrics = fetch_gnews(topic_name, query=gnews_query, category=gnews_category)
+                                    country=country, category=category,
+                                    page_size=newsapi_page_size)
+    gnews_metrics = fetch_gnews(topic_name, query=gnews_query,
+                                category=gnews_category,
+                                max_results=gnews_max_results)
     cleanup_old_payloads()
     return {
         "topic_name": topic_name,

@@ -1,41 +1,14 @@
 # MuckScraper
 
-### A self-hosted news aggregator with multi-source grouping and local LLM analysis
+### A self-hosted news-ingestion API with multi-source grouping and local LLM analysis
 
 > **TL;DR:** MuckScraper pulls news from multiple sources, groups related articles into stories, scores outlet bias, and generates local AI summaries and deeper reports on your own hardware.
 
 ---
 
-## Live Deployment
-
-**[MuckScraper.news](https://muckscraper.news)** runs on this codebase. It publishes two balanced headline editions per day and is a working example of what MuckScraper produces: story grouping across outlets, bias labeling, AI-generated summaries, and ranked coverage from across the political spectrum.
-
----
-
-## Screenshots
-
-### Headlines
-The latest published edition, with each story's Left / Center / Right coverage count and summary.
-![Headlines in light mode](screenshots/light_mode.png)
-
-### Grouped Stories (dark mode)
-![Grouped Stories in dark mode](screenshots/dark_mode.png)
-
-### Multi-Source Story View
-![Story Reader](screenshots/story_reader1.png)
-![Story Reader](screenshots/story_reader2.png)
-
-### Bias Tags
-![Bias Tags](screenshots/bias_tags1.png)
-![Bias Tags](screenshots/bias_tags2.png)
-
-### Search
-Stories and articles in dense, sortable tables, filtered by time window, with Left / Center / Right counts per story.
-![Search](screenshots/search.png)
-
-### Article Reader
-![Article Reader](screenshots/article_reader1.png)
-![Article Reader](screenshots/article_reader2.png)
+The legacy browser presentation was intentionally removed.  The service now
+publishes a small local JSON API for a native dashboard; see
+[the Agent Bar API contract](docs/agent-bar-api.md).
 
 ---
 
@@ -78,7 +51,7 @@ muckscraper/
 │   ├── __init__.py                 # App factory
 │   ├── app.py                      # Main Flask entry point
 │   ├── models.py                   # SQLAlchemy models
-│   ├── filters.py                  # Jinja filters and display helpers
+│   ├── filters.py                  # Legacy display helpers, not part of the API boundary
 │   ├── constants.py                # Shared constants (AGGREGATORS; TOPICS is dead, topics are DB-backed)
 │   ├── display_time.py             # DISPLAY_TIMEZONE handling for shown dates
 │   ├── html_safety.py              # Sanitising filters for scraped and LLM text
@@ -87,12 +60,10 @@ muckscraper/
 │   ├── search.py                   # Meilisearch integration
 │   ├── story_view.py               # Story view helpers
 │   ├── blueprints/
-│   │   ├── admin/                  # Admin and maintenance routes (package: articles, bulk_actions, config_crud, tools, ...)
-│   │   ├── auth.py                 # Login/logout routes
-│   │   └── public.py               # Public reader routes
-│   ├── static/                     # Shared static assets (css/theme.css holds the colour tokens)
-│   └── templates/                  # Jinja templates
-├── docker_restart_proxy/           # Small service that lets the admin UI restart containers
+│   │   ├── api.py                  # Registered read-only contract for native dashboard clients
+│   │   └── admin/, auth.py, public.py # Legacy web handlers; retained but not registered
+│   └── story_view.py               # Shared grouped-story presentation data helpers
+├── docker_restart_proxy/           # Internal allowlisted container-restart service
 ├── migrations/                     # Alembic migration files
 ├── news_fetcher/
 │   ├── Dockerfile                  # Scheduler image
@@ -117,7 +88,7 @@ muckscraper/
 ├── boot.sh                         # Docker app entrypoint
 ├── install.sh                      # First-time setup and upgrades
 ├── bootstrap_admin.py              # Admin user creation script
-├── docker-compose.yml              # Local stack definition
+├── docker-compose.yml              # Local API, scheduler, database, and search stack
 ├── Dockerfile                      # App image
 ├── requirements.txt                # Python dependencies
 └── .env.sample                     # Example environment configuration
@@ -127,7 +98,7 @@ muckscraper/
 
 ## Security Warning
 
-By default every page requires a login. Setting `PUBLIC_READ_ACCESS=true` (see Accounts and public access) opens the reading pages to signed-out visitors. The app is built as a private admin tool either way, so don't expose it directly to the public internet.
+By default every page requires a login. The app is built as a private admin tool, so even with public read access turned on (below), don't expose it directly to the public internet.
 
 Recommended deployment:
 - keep the admin interface on a local network
@@ -137,9 +108,9 @@ Recommended deployment:
 
 ## Requirements
 
-- Docker and Docker Compose (PostgreSQL with pgvector and Meilisearch run as part of the stack)
-- An LLM provider: Ollama by default, or Gemini, Groq, or any OpenAI-compatible endpoint
-- An embedding provider: Ollama (`nomic-embed-text`) or Gemini
+- Docker and Docker Compose (PostgreSQL and Meilisearch run as part of the stack)
+- An Ollama endpoint with the configured model profile. The Sandbox Protocol
+  deployment provides one shared, loopback-only endpoint.
 - Optional: NewsAPI and GNews API keys. Each source is skipped if its key is unset; RSS feeds work without either.
 
 ---
@@ -153,37 +124,25 @@ cd muckscraper
 ```
 
 The first run creates `.env` from `.env.sample` and stops so you can fill in
-your API keys, Ollama host, and admin login. Run it again once that's done —
-it builds the core services, sets up the database (pgvector extension +
-tables) and admin user, and starts the scheduler. Safe to re-run: on an
-existing install it applies any pending migrations rather than skipping them.
+your API keys and database secrets. Start the configured shared Ollama endpoint
+first, then run it again — it builds the core services and starts the scheduler.
+Safe to re-run: on an existing install it applies any
+pending migrations rather than skipping them.
 (A very old install with tables but no migration history stops with
 instructions instead of guessing its schema version.)
 
-Then open `http://localhost:5000` and sign in with the admin login from `.env`. You land on Headlines.
-
-### Accounts and public access
-
-Add accounts at **Users** in the account menu (top right). Each has one of three roles:
-
-- **Reader**: reads everything, including full article text and search, and changes nothing.
-- **Scraper**: also fetches articles and runs summaries, analysis, bias ratings and scrapes.
-- **Admin**: also uses Admin Tools, changes all configuration, and manages users.
-
-Everyone can change their own email and password on their **Profile**.
-
-Set `PUBLIC_READ_ACCESS=true` in `.env` to let signed-out visitors read Headlines, All Stories, Grouped Stories (with the topic filters), story pages and article summaries. Search and Fetch still need an account. Signed-out visitors never see scraped full text, scrape details or any button that runs work. It is off by default; after changing it, run `docker compose up -d app`.
-
-Dates are shown in the time zone set by `DISPLAY_TIMEZONE` in `.env` (an IANA name such as `America/New_York`; default `UTC`). After changing it, run `docker compose up -d app`; a plain restart doesn't re-read `.env`.
+After the stack starts, verify it from the host with
+`curl http://127.0.0.1:5000/api/v1/health`.  The API remains loopback-only;
+it is intended for a local dashboard client, not public exposure.
 
 <details>
 <summary>Manual steps (if you'd rather not use install.sh)</summary>
 
 ```bash
 cp .env.sample .env
-# Edit .env with your API keys, local model host, and admin login
+# Edit .env with API keys and secrets
 docker compose up -d --build postgres meilisearch app
-docker compose exec app python bootstrap_admin.py
+docker compose exec app python bootstrap_database.py
 docker compose up -d scheduler
 ```
 
@@ -241,13 +200,12 @@ MuckScraper can be extended with personal workflow hooks, such as n8n webhooks f
 - Per-article summaries
 - Stable-story skipping so unchanged stories do not keep reprocessing
 
-### Reading and search
-- Headlines, Grouped Stories (two or more articles) and All Stories views, with topic filters
-- Time windows (24 hours, 7 days, 30 days, all time) on the story lists and search
-- Search page with sortable Stories and Articles tables and custom date ranges
-- Relative timestamps ("3 hours ago") with the exact local time on hover
-- Light and dark themes
-- Reader, Scraper and Admin accounts, and optional public read-only access
+### Local dashboard API
+- Latest and archived editions with grouped story headlines
+- Left / Center / Right / unrated outlet counts per story
+- Executive summaries, deep reports, scrape-quality disclosures, and source links
+- Active topic list for a native client-side filter
+- No scraped article bodies, account data, or administrative mutations
 
 ### Bias and metadata
 - Outlet bias labels with AllSides or model-based sourcing
@@ -283,8 +241,10 @@ All DB-backed and admin-editable, no code change needed:
 - Ingestion blocklist — sources and headline keywords refused before anything is
   stored: `/admin/ingestion-blocks`
 
-The shipped defaults (US-centric topics, a gaming-news filter) are only a
-starting point. Change them on these pages to suit your own beat.
+The last two are what closed [issue #1](https://github.com/grregis/MuckScraper/issues/1).
+The shipped defaults reflect the maintainer's reading habits — US-centric topics,
+a gaming-news filter — but they are defaults now rather than the only option, so
+adapting the project to a different beat no longer means a fork.
 
 ### LLM behavior
 
@@ -307,13 +267,15 @@ LLM_FAST_PROVIDER=ollama     # the ~1,140 grouping/classification/bias calls
 ```
 
 The volume stays local and free; only the handful of calls a reader actually
-sees go to the cloud. `LLM_PROVIDER` is the summary provider and
-`LLM_FAST_PROVIDER` overrides it for the mechanical calls; leave
-`LLM_FAST_PROVIDER` blank to send everything to one provider.
+sees go to the cloud. Note the ordering reads backwards from "send simple things
+to Ollama" — the global is the cloud provider and Ollama is the exception —
+because that is the only arrangement where leaving `LLM_FAST_PROVIDER` blank
+keeps single-provider installs behaving exactly as before.
 
 Health checks are per-tier, so the pipeline degrades rather than stops: if the
 local box is asleep, summaries still run and only classification is skipped, and
-vice versa.
+vice versa. This closed
+[issue #8](https://github.com/grregis/MuckScraper/issues/8).
 
 **Model tiers (`OLLAMA_FAST_MODEL`).** A full pipeline run makes roughly 1,200
 sequential LLM calls, and about 1,140 of them are mechanical — story-grouping
@@ -329,12 +291,12 @@ that fills the card leaves no room for the embedding model, so Ollama swaps the
 two in and out on every article. A fast model that fits alongside
 `nomic-embed-text` avoids both problems.
 
-Leave it blank to use `OLLAMA_MODEL` for everything.
+Leave it blank to use `OLLAMA_MODEL` for everything (the original behavior).
 `GEMINI_FAST_MODEL` and `GROQ_FAST_MODEL` do the same for those providers.
 
 Prompt wording itself is editable at `/admin/prompts` (see above) with no
 code change needed. The surrounding logic — persona/analysis-type
-selection, story-grouping thresholds, etc. — lives in:
+selection, story-grouping thresholds, etc. — still lives in:
 - `news_fetcher/summarizer.py`
 - `news_fetcher/topic_classifier.py`
 - `news_fetcher/story_grouper.py`

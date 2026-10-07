@@ -1,22 +1,16 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_migrate import Migrate
-from flask_login import LoginManager
-from flask_wtf import CSRFProtect
 import os
-import logging
-
-logger = logging.getLogger(__name__)
 
 db = SQLAlchemy()
 migrate = Migrate()
-login = LoginManager()
-login.login_view = "auth.login"
-csrf = CSRFProtect()
 
 
 def create_app():
-    app = Flask(__name__)
+    # This service is intentionally API-only.  Keep Flask from discovering or
+    # serving a conventional static/template presentation layer by default.
+    app = Flask(__name__, static_folder=None, template_folder=None)
 
     app.config["SQLALCHEMY_DATABASE_URI"] = os.environ.get("DATABASE_URL", "")
     app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
@@ -38,39 +32,16 @@ def create_app():
 
     db.init_app(app)
     migrate.init_app(app, db)
-    login.init_app(app)
-    csrf.init_app(app)
 
-    @login.user_loader
-    def load_user(id):
-        from aggregator.models import User
-        user = User.query.get(int(id))
-        # A disabled account loses any session it already had.
-        return user if user and user.is_active else None
+    from aggregator.blueprints.api import api
+    app.register_blueprint(api)
 
-    @app.context_processor
-    def inject_permissions():
-        from aggregator.models import ROLE_LABELS
-        from aggregator.permissions import can, public_read_enabled
-        from aggregator import navigation
-        return {"can": can, "public_read": public_read_enabled(), "role_labels": ROLE_LABELS,
-                "current_back": navigation.current_back, "incoming_back": navigation.incoming_back,
-                "feed_back_url": navigation.feed_back_url, "menu_back": navigation.menu_back}
-
-    @app.errorhandler(403)
-    def forbidden(_error):
-        from flask import render_template
-        return render_template("forbidden.html"), 403
-
-    from aggregator.filters import register_filters
-    register_filters(app)
-
-    from aggregator.blueprints.public import public
-    from aggregator.blueprints.admin import admin
-    from aggregator.blueprints.auth import auth
-    app.register_blueprint(public)
-    app.register_blueprint(admin,  url_prefix='/admin')
-    app.register_blueprint(auth,   url_prefix='/auth')
+    @app.errorhandler(400)
+    @app.errorhandler(404)
+    @app.errorhandler(500)
+    def api_error(error):
+        from flask import jsonify
+        return jsonify({"error": error.name, "message": error.description}), error.code
 
     return app
 

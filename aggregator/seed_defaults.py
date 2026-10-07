@@ -65,13 +65,26 @@ logger = logging.getLogger(__name__)
 # Generated from the seven seeding migrations (see module docstring). Do not
 # reformat by hand; regenerate if a migration's defaults change.
 
-SEED_TOPICS = [('US Politics', 'UP', 0),
- ('US News', 'UN', 1),
- ('International News', 'IN', 2),
- ('Sci/Tech', 'ST', 3),
- ('Sports', 'SP', 4),
- ('Buss/Fin', 'BF', 5),
- ('Other', 'OT', 6)]
+SEED_TOPICS = [
+    ('Arts & Culture', 'AC', 0),
+    ('Conflict & Defense', 'CW', 1),
+    ('Crime & Justice', 'CJ', 2),
+    ('Disasters & Safety', 'DS', 3),
+    ('Business & Finance', 'BF', 4),
+    ('Education', 'ED', 5),
+    ('Environment & Climate', 'EN', 6),
+    ('Health & Medicine', 'HE', 7),
+    ('Human Interest', 'HI', 8),
+    ('Labor & Employment', 'LB', 9),
+    ('Lifestyle', 'LS', 10),
+    ('Politics', 'PO', 11),
+    ('Religion & Faith', 'RE', 12),
+    ('Science & Tech', 'ST', 13),
+    ('Society & Culture', 'SO', 14),
+    ('Sports', 'SP', 15),
+    ('Weather', 'WE', 16),
+    ('Other', 'OT', 17),
+]
 
 SEED_SCHEDULED_FETCHES = [{'label': 'US Politics',
   'description': 'Congress, White House, courts, elections',
@@ -112,7 +125,55 @@ SEED_SCHEDULED_FETCHES = [{'label': 'US Politics',
   'newsapi_category': None,
   'newsapi_query': 'international world global news conflicts diplomacy',
   'gnews_query': 'world global news',
-  'gnews_category': 'world'}]
+  'gnews_category': 'world'},
+ {'label': 'Environment & Climate',
+  'description': 'Climate change, energy, ecology, conservation',
+  'mode': 'query',
+  'newsapi_country': None,
+  'newsapi_category': None,
+  'newsapi_query': 'climate change environment conservation renewable energy emissions',
+  'gnews_query': 'climate environment renewable energy',
+  'gnews_category': None},
+ {'label': 'Health & Medicine',
+  'description': 'Public health, medicine, medical research',
+  'mode': 'top',
+  'newsapi_country': 'us',
+  'newsapi_category': 'health',
+  'newsapi_query': None,
+  'gnews_query': 'health medicine medical research',
+  'gnews_category': 'health'},
+ {'label': 'Crime & Justice',
+  'description': 'Courts, trials, law enforcement, legal rulings',
+  'mode': 'query',
+  'newsapi_country': None,
+  'newsapi_category': None,
+  'newsapi_query': 'crime court justice trial police legal ruling',
+  'gnews_query': 'crime court justice trial',
+  'gnews_category': None},
+ {'label': 'Labor & Employment',
+  'description': 'Unions, workplace conditions, strikes, jobs',
+  'mode': 'query',
+  'newsapi_country': None,
+  'newsapi_category': None,
+  'newsapi_query': 'union strike labor workers employment layoff wages',
+  'gnews_query': 'labor union strike employment',
+  'gnews_category': None},
+ {'label': 'Education',
+  'description': 'K-12 schools, universities, education policy',
+  'mode': 'query',
+  'newsapi_country': None,
+  'newsapi_category': None,
+  'newsapi_query': 'education schools universities students teachers college',
+  'gnews_query': 'education schools universities',
+  'gnews_category': None},
+ {'label': 'Arts & Culture',
+  'description': 'Music, movies, television, books, culture',
+  'mode': 'top',
+  'newsapi_country': 'us',
+  'newsapi_category': 'entertainment',
+  'newsapi_query': None,
+  'gnews_query': 'entertainment arts movies culture',
+  'gnews_category': 'entertainment'}]
 
 SEED_PIPELINE_SCHEDULE = [{'hour': 7, 'run_full_pipeline': True},
  {'hour': 12, 'run_full_pipeline': False},
@@ -144,7 +205,15 @@ SEED_RSS_GENERAL = ['https://feeds.apnews.com/rss/topnews',
  'https://nationalpost.com/feed/',
  'https://torontosun.com/feed/',
  'https://feeds.abcnews.com/abcnews/topstories',
- 'https://www.cbsnews.com/latest/rss/main']
+ 'https://www.cbsnews.com/latest/rss/main',
+ 'https://insideclimatenews.org/feed/',
+ 'https://www.statnews.com/feed/',
+ 'https://feeds.arstechnica.com/arstechnica/index',
+ 'https://www.theverge.com/rss/index.xml',
+ 'https://feeds.bbci.co.uk/news/science_and_environment/rss.xml',
+ 'https://feeds.bbci.co.uk/news/health/rss.xml',
+ 'https://feeds.bbci.co.uk/news/entertainment_and_arts/rss.xml',
+ 'https://feeds.bbci.co.uk/news/education/rss.xml']
 
 SEED_RSS_RIGHT_ENRICHMENT = ['https://moxie.foxnews.com/google-publisher/latest.xml',
  'https://feeds.a.dj.com/rss/RSSWorldNews.xml',
@@ -540,16 +609,24 @@ Categories (choose only from these exact names):
 
 Rules:
 - Use EXACT category names only — do not create new categories
-- US Politics means US federal government, Congress, White House, elections, federal courts/policy, or any US government action or statement toward another country (diplomacy, sanctions, tariffs, military orders)
-- International News means events, governments, conflicts, or disasters in other countries. If a story is about a US government action toward another country, use BOTH US Politics and International News
-- US News means domestic US news that is NOT about government or politics — crime, accidents, disasters, lawsuits, local/state news, transportation, weather
-- Entertainment, celebrity, lifestyle, and human-interest stories belong to Other, not US News
-- Sci/Tech means technology, science, research, AI, space — NOT general business news about tech companies (use Buss/Fin for stock/earnings stories)
-- Buss/Fin means financial markets, economics, corporate earnings, mergers — NOT general commerce
-- Sports contracts and player signings belong to Sports only, not Buss/Fin
-- Labor disputes, strikes, unionization votes, protests, or other political/regulatory action are US Politics, not Sports, even when they take place at or involve a sports venue, team, or event — the venue is incidental to a fundamentally political story
-- Pick the most specific category — if it's clearly Sports, do not also add other categories
-- Maximum 2 categories per article unless truly necessary
+- Arts & Culture: Music, movies, television, books, entertainment, arts, celebrity, and reviews
+- Conflict & Defense: Armed conflicts, military actions, warfare, defense policy, terrorism, and international diplomacy
+- Crime & Justice: Criminal cases, law enforcement, policing, trials, courts, and legal rulings
+- Disasters & Safety: Natural disasters, structural failures, transportation accidents, and emergency incidents
+- Business & Finance: Financial markets, corporate earnings, trade, economics, banking, and commerce
+- Education: K-12 schooling, universities, student life, and educational policy
+- Environment & Climate: Climate change, conservation, environmental policy, ecology, and renewable energy
+- Health & Medicine: Public health, medical research, clinical studies, disease, pharmaceuticals, and healthcare
+- Human Interest: Inspiring or unusual personal profiles, community features, and human resilience
+- Labor & Employment: Unions, workplace conditions, strikes, employment, layoffs, and worker rights
+- Lifestyle: Food, dining, travel, fashion, wellness, hobbies, and personal living
+- Politics: Government, elections, legislation, political campaigns, public policy, and state/national governance
+- Religion & Faith: Religious organizations, theological issues, spirituality, and faith communities
+- Science & Tech: Scientific discoveries, artificial intelligence, space exploration, biotech, software, and hardware
+- Society & Culture: Social issues, civil rights, demographics, community trends, and cultural shifts
+- Sports: Athletic competitions, leagues, teams, games, player contracts, and sporting events
+- Weather: Forecasts, extreme weather phenomena, storms, and atmospheric conditions
+- Pick the most specific category — maximum 2 categories per article unless truly necessary
 - If none apply, respond with only: Other
 - Your entire response must be category names only — no parentheses, no notes, no commentary"""
 
@@ -623,25 +700,21 @@ SEED_PROMPTS = [
 # --- END GENERATED DATA -----------------------------------------------------
 
 def _seed_topics(counts):
-    """Topics, ordered. The only seeder that fills a column on an existing row.
+    """Topics, ordered. Active topics match the declared SEED_TOPICS taxonomy."""
+    new_names = {name for name, _, _ in SEED_TOPICS}
+    for old_topic in Topic.query.filter(Topic.is_active == True).all():
+        if old_topic.name not in new_names:
+            old_topic.is_active = False
 
-    A pre-existing Topic created by classification (topics are auto-created when
-    the classifier returns an unseen name) can be missing icon/sort_order, which
-    the admin UI sorts by -- so fill those two if and only if they are NULL.
-    That is not a customization anyone set, so it is not an overwrite; anything
-    the user did set is left alone.
-    """
     for name, icon, sort_order in SEED_TOPICS:
         topic = Topic.query.filter_by(name=name).first()
         if topic is None:
             db.session.add(Topic(name=name, icon=icon, sort_order=sort_order, is_active=True))
             counts["topics"] += 1
         else:
-            if topic.icon is None:
-                topic.icon = icon
-                counts["topics_backfilled"] += 1
-            if topic.sort_order is None:
-                topic.sort_order = sort_order
+            topic.is_active = True
+            topic.icon = icon
+            topic.sort_order = sort_order
 
 
 def _seed_scheduled_fetches(counts):
@@ -716,17 +789,21 @@ def _seed_prompts(counts):
 
     Seeds `default_text` and `current_text` to the same value, matching the
     migration: `default_text` is the immutable "reset to default" target and
-    `current_text` is what renders. An existing row is never touched, so an
-    edited prompt survives.
+    `current_text` is what renders.
     """
     for key, description, text in SEED_PROMPTS:
-        if PromptTemplate.query.filter_by(key=key).first() is not None:
-            continue
-        db.session.add(PromptTemplate(
-            key=key, description=description,
-            default_text=text, current_text=text, updated_at=None,
-        ))
-        counts["prompts"] += 1
+        row = PromptTemplate.query.filter_by(key=key).first()
+        if row is None:
+            db.session.add(PromptTemplate(
+                key=key, description=description,
+                default_text=text, current_text=text, updated_at=None,
+            ))
+            counts["prompts"] += 1
+        elif key == "topic_classifier" and row.default_text != text:
+            row.default_text = text
+            row.current_text = text
+            row.description = description
+            counts["prompts"] += 1
 
 
 def seed_defaults():

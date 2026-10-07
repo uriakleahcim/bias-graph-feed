@@ -203,30 +203,30 @@ def detect_analysis_type(obj):
     topics_lower = [t.lower() for t in topics]
     text = _analysis_text(obj)
 
-    # A story whose only topic is US Politics is high-confidence enough on its
+    # A story whose only topic is Politics is high-confidence enough on its
     # own: don't let rhetorical verbs ("attacks", "slams") in its headlines
     # fall through to PUBLIC_SAFETY_ANALYSIS_KEYWORDS, and don't require a
     # POLITICAL_ANALYSIS_KEYWORDS match that policy-speech headlines often lack.
-    if topics_lower == ['us politics']:
+    if topics_lower in (['us politics'], ['politics']):
         return 'politics'
 
-    # A story tagged both US Politics and Sports (e.g. a stadium workers'
+    # A story tagged both Politics and Sports (e.g. a stadium workers'
     # strike vote) is fundamentally political activity that happens to
     # involve a sports venue/team -- treat it as political, not sports,
     # rather than letting the sports check below win by default.
-    if 'us politics' in topics_lower and 'sports' in topics_lower:
+    if any(t in ('us politics', 'politics') for t in topics_lower) and 'sports' in topics_lower:
         return 'politics'
 
     if _contains_any(text, PUBLIC_SAFETY_ANALYSIS_KEYWORDS):
         return 'default'
-    if any(t == 'us politics' for t in topics_lower) and _contains_any(text, POLITICAL_ANALYSIS_KEYWORDS):
+    if any(t in ('us politics', 'politics') for t in topics_lower) and _contains_any(text, POLITICAL_ANALYSIS_KEYWORDS):
         return 'politics'
-    if any(t == 'sci/tech' for t in topics_lower):
+    if any(t in ('sci/tech', 'science & tech') for t in topics_lower):
         return 'science'
     if any(t == 'sports' for t in topics_lower):
         return 'sports'
     if (
-        any(t == 'buss/fin' for t in topics_lower)
+        any(t in ('buss/fin', 'business & finance') for t in topics_lower)
         and _contains_any(text, BUSINESS_ANALYSIS_KEYWORDS)
     ):
         return 'business'
