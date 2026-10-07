@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# muckscraperHeadlinesGoogleNEW/restart.sh
+# Bias Graph Feed restart helper
 
 COMPOSE_FILES=(-f docker-compose.yml)
 

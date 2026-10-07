@@ -1,4 +1,4 @@
-# muckscraperHeadlinesGoogleNEW/aggregator/app.py
+# Bias Graph Feed application setup
 import logging
 from aggregator import create_app, db
 from flask_migrate import Migrate

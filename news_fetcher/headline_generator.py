@@ -1,4 +1,4 @@
-# muckscraperHeadlinesGoogleNEW/news_fetcher/headline_generator.py
+# Bias Graph Feed headline generator
 # news_fetcher/headline_generator.py
 
 import logging

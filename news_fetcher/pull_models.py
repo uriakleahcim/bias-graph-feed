@@ -1,4 +1,4 @@
-"""Ensure MuckScraper's fixed local Ollama profile is available before ingesting.
+"""Ensure Bias Graph Feed's fixed local Ollama profile is available before ingesting.
 
 This module runs only in the short-lived Compose initializer service.  Models
 are pulled through Ollama's internal HTTP API into its named Docker volume;

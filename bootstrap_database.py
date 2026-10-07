@@ -1,4 +1,4 @@
-"""Create, migrate, and seed an API-only MuckScraper database.
+"""Create, migrate, and seed an API-only Bias Graph Feed database.
 
 The legacy bootstrap script also created a browser-admin account. The API-only
 deployment still needs its safe schema-state handling and default pipeline

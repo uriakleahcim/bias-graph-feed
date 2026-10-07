@@ -1,4 +1,4 @@
-# muckscraperHeadlinesGoogleNEW/news_fetcher/scraper.py
+# Bias Graph Feed article scraper
 # news_fetcher/scraper.py
 
 import requests

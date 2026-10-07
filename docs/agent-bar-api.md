@@ -1,6 +1,6 @@
-# Agent Bar API
+# Bias Graph Feed API
 
-MuckScraper is an API-only ingestion and story-clustering service.  Its old
+Bias Graph Feed is an API-only ingestion and story-clustering service. Its old
 Flask/Jinja reader and administrative presentation layer have been removed;
 the scheduler, models, migrations, PostgreSQL/pgvector mapping, and
 Meilisearch integration remain unchanged.

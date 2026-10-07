@@ -49,7 +49,7 @@ def prepare_schema(state):
     """
     if state == "unmanaged":
         raise RuntimeError(
-            "This database has MuckScraper tables but no Alembic version, so "
+            "This database has Bias Graph Feed tables but no Alembic version, so "
             "which migrations it has is unknown and marking it current could "
             "skip real schema changes. Identify the revision that matches its "
             "schema, run `flask db stamp <revision>`, then `flask db upgrade`, "

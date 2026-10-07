@@ -1,6 +1,7 @@
 # Changelog
  
-All notable changes to MuckScraper are documented here.
+All notable changes to Bias Graph Feed are documented here. Earlier entries
+describe its MuckScraper history.
  
 ---
 

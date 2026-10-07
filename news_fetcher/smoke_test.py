@@ -1,4 +1,4 @@
-"""Run the bounded MuckScraper ingestion profile as a one-shot service."""
+"""Run the bounded Bias Graph Feed ingestion profile as a one-shot service."""
 
 from news_fetcher.scheduler import run_all_fetches
 

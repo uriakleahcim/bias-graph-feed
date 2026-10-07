@@ -1,4 +1,4 @@
-# muckscraperHeadlinesGoogleNEW/news_fetcher/outlet_bias_llm.py
+# Bias Graph Feed outlet-bias classifier
 # news_fetcher/outlet_bias_llm.py
 
 import os

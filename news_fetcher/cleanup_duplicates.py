@@ -1,4 +1,4 @@
-# muckscraperHeadlinesGoogleNEW/news_fetcher/cleanup_duplicates.py
+# Bias Graph Feed duplicate cleanup
 from aggregator import create_app, db
 from aggregator.models import Article, Story
 import logging

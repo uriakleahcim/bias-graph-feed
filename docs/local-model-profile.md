@@ -2,10 +2,10 @@
 
 ## Current policy
 
-MuckScraper consumes a shared Ollama service over its configured `OLLAMA_HOST`.
+Bias Graph Feed consumes a shared Ollama service over its configured `OLLAMA_HOST`.
 In the Sandbox Protocol deployment, that service owns the model cache at
 `/home/uriak/sandbox/groups/agent-models/ollama`, mounted as `/root/.ollama`
-inside the Ollama container. MuckScraper does not mount, write, or otherwise
+inside the Ollama container. Bias Graph Feed does not mount, write, or otherwise
 own that directory.
 
 The fixed profile is intentionally capped at 3B parameters:

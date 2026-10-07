@@ -1,4 +1,4 @@
-# muckscraperHeadlinesGoogleNEW/news_fetcher/summarizer.py
+# Bias Graph Feed summarizer
 # news_fetcher/summarizer.py
 
 import os

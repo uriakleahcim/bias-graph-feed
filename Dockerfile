@@ -1,4 +1,4 @@
-# muckscraperHeadlinesGoogleNEW/Dockerfile
+# Bias Graph Feed application image
 # Use an official Python runtime as a parent image
 FROM python:3.10-slim
 

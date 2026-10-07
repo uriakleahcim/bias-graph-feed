@@ -1,4 +1,4 @@
-# muckscraperHeadlinesGoogleNEW/docker-compose.yml
+# Bias Graph Feed Compose deployment
 services:
   postgres:
     image: pgvector/pgvector:pg14

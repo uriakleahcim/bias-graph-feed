@@ -1,4 +1,4 @@
-# muckscraperHeadlinesGoogleNEW/news_fetcher/story_grouper.py
+# Bias Graph Feed story grouper
 # news_fetcher/story_grouper.py
 
 import os

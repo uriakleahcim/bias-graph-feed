@@ -125,7 +125,7 @@ def _no_store(response):
 
 @api.get("/health")
 def health():
-    return jsonify({"status": "ok", "service": "muckscraper-api", "version": 1})
+    return jsonify({"status": "ok", "service": "bias-graph-feed-api", "version": 1})
 
 
 @api.get("/headlines")

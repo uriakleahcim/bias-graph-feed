@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# muckscraperHeadlinesGoogleNEW/install.sh
+# Bias Graph Feed installer
 #
 # One-command setup for a fresh clone: creates .env if missing, builds the
 # core services, lets the Compose lifecycle bootstrap the database (pgvector
@@ -67,7 +67,7 @@ info "Waiting for the lifecycle database bootstrap and scheduler..."
 docker compose up -d scheduler
 
 echo
-ok "MuckScraper is running against its configured shared Ollama endpoint."
+ok "Bias Graph Feed is running against its configured shared Ollama endpoint."
 echo
 echo "  API:  http://127.0.0.1:5000/api/v1/health"
 echo

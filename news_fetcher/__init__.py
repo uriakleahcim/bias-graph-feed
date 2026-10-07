@@ -1,1 +1,1 @@
-# muckscraperHeadlinesGoogleNEW/news_fetcher/__init__.py
+# Bias Graph Feed ingestion package

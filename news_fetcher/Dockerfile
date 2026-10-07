@@ -1,4 +1,4 @@
-# muckscraperHeadlinesGoogleNEW/news_fetcher/Dockerfile
+# Bias Graph Feed scheduler image
 # Dockerfile news_fetcher
 FROM python:3.10-slim
 

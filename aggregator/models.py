@@ -1,4 +1,4 @@
-# muckscraperHeadlinesGoogleNEW/aggregator/models.py
+# Bias Graph Feed data models
 # aggregator/models.py
 
 from . import db

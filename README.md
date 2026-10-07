@@ -1,8 +1,8 @@
-# MuckScraper
+# Bias Graph Feed
 
 ### A self-hosted news-ingestion API with multi-source grouping and local LLM analysis
 
-> **TL;DR:** MuckScraper pulls news from multiple sources, groups related articles into stories, scores outlet bias, and generates local AI summaries and deeper reports on your own hardware.
+> **TL;DR:** Bias Graph Feed pulls news from multiple sources, groups related articles into stories, scores outlet bias, and generates local AI summaries and deeper reports on your own hardware.
 
 ---
 
@@ -10,11 +10,14 @@ The legacy browser presentation was intentionally removed.  The service now
 publishes a small local JSON API for a native dashboard; see
 [the Agent Bar API contract](docs/agent-bar-api.md).
 
+Bias Graph Feed is a maintained fork of MuckScraper by grregis. The original
+MIT copyright and license remain in [LICENSE](LICENSE).
+
 ---
 
 ## Why This Is Different
 
-Most aggregators are just article lists. MuckScraper is story-first.
+Most aggregators are just article lists. Bias Graph Feed is story-first.
 
 - **Cross-outlet story grouping**: related coverage from multiple publishers is clustered into a single story so you can compare framing side by side.
 - **Bias visibility**: outlets are labeled on a left-to-right scale using AllSides where available and local model scoring otherwise.
@@ -26,7 +29,7 @@ Most aggregators are just article lists. MuckScraper is story-first.
 
 ## What It Does
 
-MuckScraper fetches articles from multiple news APIs and RSS feeds on a schedule, scrapes article text, groups related coverage into stories, classifies topics, scores outlet bias, and generates summaries or deeper reports when content is ready. It includes admin tooling for scrape review, retries, regrouping, and monitoring scrape health over time.
+Bias Graph Feed fetches articles from multiple news APIs and RSS feeds on a schedule, scrapes article text, groups related coverage into stories, classifies topics, scores outlet bias, and generates summaries or deeper reports when content is ready. It includes admin tooling for scrape review, retries, regrouping, and monitoring scrape health over time.
 
 ---
 
@@ -46,7 +49,7 @@ MuckScraper fetches articles from multiple news APIs and RSS feeds on a schedule
 ## Project Structure
 
 ```text
-muckscraper/
+bias-graph-feed/
 ├── aggregator/
 │   ├── __init__.py                 # App factory
 │   ├── app.py                      # Main Flask entry point
@@ -118,8 +121,8 @@ Recommended deployment:
 ## Installation
 
 ```bash
-git clone https://github.com/grregis/muckscraper.git
-cd muckscraper
+git clone https://github.com/uriakleahcim/bias-graph-feed.git
+cd bias-graph-feed
 ./install.sh
 ```
 
@@ -163,7 +166,7 @@ entry, never shipped silently in a minor/patch upgrade.
 
 ### Optional workflow integrations
 
-MuckScraper can be extended with personal workflow hooks, such as n8n webhooks for fetch reports or Ollama power management, and Matrix notifications for status messages. These are not part of the default Docker Compose setup; add them with your own environment variables, compose override, or notification code if you want those workflows.
+Bias Graph Feed can be extended with personal workflow hooks, such as n8n webhooks for fetch reports or Ollama power management, and Matrix notifications for status messages. These are not part of the default Docker Compose setup; add them with your own environment variables, compose override, or notification code if you want those workflows.
 
 ---
 
@@ -241,7 +244,6 @@ All DB-backed and admin-editable, no code change needed:
 - Ingestion blocklist — sources and headline keywords refused before anything is
   stored: `/admin/ingestion-blocks`
 
-The last two are what closed [issue #1](https://github.com/grregis/MuckScraper/issues/1).
 The shipped defaults reflect the maintainer's reading habits — US-centric topics,
 a gaming-news filter — but they are defaults now rather than the only option, so
 adapting the project to a different beat no longer means a fork.
@@ -274,8 +276,7 @@ keeps single-provider installs behaving exactly as before.
 
 Health checks are per-tier, so the pipeline degrades rather than stops: if the
 local box is asleep, summaries still run and only classification is skipped, and
-vice versa. This closed
-[issue #8](https://github.com/grregis/MuckScraper/issues/8).
+vice versa.
 
 **Model tiers (`OLLAMA_FAST_MODEL`).** A full pipeline run makes roughly 1,200
 sequential LLM calls, and about 1,140 of them are mechanical — story-grouping
@@ -326,4 +327,4 @@ Important knobs include:
 
 - **[Meilisearch](https://www.meilisearch.com/)** — powers full-text search across articles and stories. Fast, easy to self-host, and a genuinely great fit for this kind of project.
 - **[Langfuse](https://langfuse.com/)** — LLM observability and tracing, invaluable for debugging prompts and iterating on model behavior during development.
-- **[AllSides](https://www.allsides.com/)** — outlet bias ratings that inform MuckScraper's bias labeling. Their commitment to balanced news exposure is very much in the spirit of this project.
+- **[AllSides](https://www.allsides.com/)** — outlet bias ratings that inform Bias Graph Feed's bias labeling. Their commitment to balanced news exposure is very much in the spirit of this project.

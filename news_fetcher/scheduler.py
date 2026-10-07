@@ -1,4 +1,4 @@
-# muckscraperHeadlinesGoogleNEW/news_fetcher/scheduler.py
+# Bias Graph Feed scheduler
 # news_fetcher/scheduler.py
 
 from apscheduler.schedulers.blocking import BlockingScheduler

@@ -1,4 +1,4 @@
-# muckscraperHeadlinesGoogleNEW/news_fetcher/topic_classifier.py
+# Bias Graph Feed topic classifier
 # news_fetcher/topic_classifier.py
 
 import os

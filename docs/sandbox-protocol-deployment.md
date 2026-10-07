@@ -1,7 +1,7 @@
 # Sandbox Protocol Deployment
 
-MuckScraper is deployed as one Compose target through Docker Sandbox Protocol.
-The logical sandbox target is the API container named `muckscraper`; starting
+Bias Graph Feed is deployed as one Compose target through Docker Sandbox Protocol.
+The logical sandbox target remains `muckscraper`; starting
 it launches the API, scheduler, PostgreSQL, Meilisearch, and the internal
 restart proxy. Local inference is supplied by the separate shared `ollama`
 Sandbox target.
@@ -22,7 +22,7 @@ instead owned by:
 ```
 
 It is mounted only into the shared Ollama container as `/root/.ollama`.
-Consumers, including MuckScraper, use the shared internal Docker-network
+Consumers, including Bias Graph Feed, use the shared internal Docker-network
 endpoint at `http://ollama:11434` rather than mounting the cache. The same
 service is available to host-local clients at `http://127.0.0.1:11434`.
 
@@ -42,7 +42,7 @@ Create the runtime-only secret file from
 
 Set it to mode `600`. Its `NEWS_API_KEY` and `GNEWS_API_KEY` entries are
 references that map the saved provider credentials (`NEWSAPI_API_KEY` and
-`GNEWS_API_KEY`) into MuckScraper's application names. API values are never
+`GNEWS_API_KEY`) into Bias Graph Feed's application names. API values are never
 persisted in this runtime file.
 
 The active Docker Sandbox Protocol declaration supplies the saved Aegis
@@ -57,7 +57,7 @@ RSS ingestion.
 Database schema preparation and default pipeline seeding are an idempotent
 `database-bootstrap` Compose lifecycle service. The API and scheduler wait for
 that service to complete successfully; do not replace it with an ad-hoc
-`docker compose exec` command. Future required MuckScraper setup work must be
+`docker compose exec` command. Future required Bias Graph Feed setup work must be
 added to the declared Compose/Sandbox lifecycle before it is relied on at
 runtime.
 
@@ -81,7 +81,7 @@ Start `ollama` before `muckscraper`. On a first start, wait for the
 starts reuse the cached model profile. `sandbox logs muckscraper` follows the
 scheduler by default. Supply one of the declared service names to inspect that
 service instead. `sandbox in c
-muckscraper run smoke-test` is the declared MuckScraper command node for a
+muckscraper run smoke-test` is the declared Bias Graph Feed command node for a
 bounded profile: one scheduled topic, at most 10 NewsAPI and 5 GNews results,
 no RSS feeds, and no targeted RSS enrichment. It still runs clustering,
 headline generation, publication, and edition-content processing so the API
@@ -101,3 +101,10 @@ MUCKSCRAPER_RUNTIME_ROOT=/home/uriak/sandbox/groups/agent-services/muckscraper \
 The restart proxy remains internal. Its Docker socket must match the Docker
 context selected by the Sandbox Protocol; validate that mount and the proxy's
 allowlist after the first authorized launch.
+
+## Compatibility identifiers
+
+The sandbox target, Compose project, runtime-root variable, and existing
+database data keep their `muckscraper` names for compatibility with the active
+deployment. They are deployment identifiers, not the product name; do not
+rename them until a separately validated data and service migration is ready.
